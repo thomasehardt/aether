@@ -1,5 +1,7 @@
 # Aether
 
+**v0.1.0**
+
 A generative ambient soundscape player that runs entirely in the browser. Every sound — drones, sub bass, rain, ocean waves, wind, and generative bell tones — is synthesized live with the Web Audio API. No audio samples, no loops.
 
 Open `aether-soundscape.html` in a browser to use it.
