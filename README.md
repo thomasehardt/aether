@@ -2,17 +2,17 @@
 
 **v0.1.0**
 
-A generative ambient soundscape player that runs entirely in the browser. Every sound — drones, sub bass, rain, ocean waves, wind, and generative bell tones — is synthesized live with the Web Audio API. No audio samples, no loops.
+A generative ambient soundscape player that runs entirely in the browser. Every sound — drones, sub bass, rain, ocean waves, wind, generative bell tones, and a melodic arpeggiator — is synthesized live with the Web Audio API. No audio samples, no loops.
 
 Open `aether-soundscape.html` in a browser to use it.
 
 ## Features
 
-- Six layered ambient sounds (Drone, Sub, Rain, Waves, Wind, Bells), each with an independent mixer level
-- Five root keys (C, D, E, G, A) that retune the drone and sub layers, with bells generated over a minor pentatonic scale
+- Seven layered ambient sounds (Drone, Sub, Rain, Waves, Wind, Bells, Arp), each with an independent mixer level
+- Five root keys (C, D, E, G, A) that retune the drone and sub layers, with Bells and Arp generated over a minor pentatonic scale
 - Five presets (Rainfall, Deep Ocean, Nebula, Rainforest, Sanctuary) that snapshot a key + layer mix
 - Adjustable master volume and reverb ("Space") send
-- "Reseed" button to vary the generative bell pattern
+- "Reseed" button to vary the generative bell and arpeggiator patterns
 - Reactive canvas visualizer driven by a live audio analyser
 - No dependencies, no build step — a single self-contained HTML file
 

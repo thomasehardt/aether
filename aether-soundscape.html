@@ -339,15 +339,16 @@
     { id:'waves', name:'Waves',  desc:'ocean wash',        base:0.55 },
     { id:'wind',  name:'Wind',   desc:'breathing air',     base:0.42 },
     { id:'bells', name:'Bells',  desc:'generative motes',  base:0.5  },
+    { id:'arp',   name:'Arp',    desc:'melodic phrases',   base:0.4  },
   ];
 
   // ---- presets: {layer: level 0..1}, key ----
   const PRESETS = {
     'Rainfall':   { key:'A', layers:{ rain:0.85, drone:0.35, wind:0.22 } },
     'Deep Ocean': { key:'D', layers:{ waves:0.85, wind:0.3, sub:0.45 } },
-    'Nebula':     { key:'E', layers:{ drone:0.6, sub:0.5, bells:0.45 } },
+    'Nebula':     { key:'E', layers:{ drone:0.6, sub:0.5, bells:0.45, arp:0.3 } },
     'Rainforest': { key:'G', layers:{ wind:0.32, bells:0.5, rain:0.28 } },
-    'Sanctuary':  { key:'C', layers:{ drone:0.5, bells:0.6, sub:0.32 } },
+    'Sanctuary':  { key:'C', layers:{ drone:0.5, bells:0.6, sub:0.32, arp:0.35 } },
   };
 
   // ---- engine state ----
@@ -355,7 +356,8 @@
   let noise={}, layers={}, started=false, playing=false, seed=Math.random();
   let curKey='C', masterVol=0.55, spaceAmt=0.45;
   let bellTimer=null;
-  const state = { drone:0, sub:0, rain:0, waves:0, wind:0, bells:0 }; // 0..1 target levels
+  let arpTimer=null, arpPhrase=[], arpStep=0;
+  const state = { drone:0, sub:0, rain:0, waves:0, wind:0, bells:0, arp:0 }; // 0..1 target levels
 
   // ================= AUDIO BUILD =================
   function makeNoise(type, secs){
@@ -421,8 +423,8 @@
     noise.pink  = makeNoise('pink',3);
     noise.brown = makeNoise('brown',3);
 
-    buildRain(); buildWaves(); buildWind(); buildDrone(); buildSub(); buildBells();
-    startBellScheduler();
+    buildRain(); buildWaves(); buildWind(); buildDrone(); buildSub(); buildBells(); buildArp();
+    startBellScheduler(); startArpScheduler();
   }
 
   // route a layer's output: dry + reverb send
@@ -524,6 +526,13 @@
     layers.bells = { g, max:1.0, out:g };
   }
 
+  function buildArp(){
+    const g = gain(0.9); // per-note enveloped, so layer gain acts as on/off level
+    g.connect(dryBus);
+    const send = gain(0.5); g.connect(send).connect(reverb);
+    layers.arp = { g, max:1.0, out:g };
+  }
+
   function triggerBell(){
     if(!ctx || state.bells<=0.001) return;
     const lvl = state.bells;
@@ -568,6 +577,69 @@
     bellTimer = setTimeout(tick, 800);
   }
 
+  // walks a short generative melodic phrase over the pentatonic scale
+  function regenArpPhrase(){
+    const len = 6 + Math.floor(rng()*3); // 6-8 notes
+    const degrees = [0]; // start on the root
+    for(let i=1;i<len;i++){
+      const prev = degrees[i-1];
+      const move = Math.floor(rng()*5)-2; // step -2..+2 scale degrees
+      degrees.push(Math.max(0, Math.min(9, prev+move))); // clamp to ~2 octaves
+    }
+    arpPhrase = degrees; arpStep = 0;
+  }
+
+  function triggerArpNote(){
+    if(!ctx || state.arp<=0.001) return;
+    const lvl = state.arp;
+    if(arpPhrase.length===0) regenArpPhrase();
+    const deg = arpPhrase[arpStep % arpPhrase.length];
+    arpStep++;
+    if(arpStep>=arpPhrase.length && rng()<0.35) regenArpPhrase(); // occasionally vary the phrase
+    const root = KEYS[curKey]*2; // mid register, below bells
+    const octave = Math.floor(deg/PENTA.length);
+    const step = PENTA[deg % PENTA.length];
+    const freq = root * Math.pow(2, octave + step/12);
+    const t = ctx.currentTime;
+    const dur = 0.9 + rng()*0.5;
+    const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if(pan) pan.pan.value = (rng()*2-1)*0.5;
+    const env = gain(0);
+    const peak = 0.15*lvl;
+    env.gain.setValueAtTime(0.0001, t);
+    env.gain.exponentialRampToValueAtTime(peak, t+0.006);
+    env.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    // plucky lowpass sweep gives it a struck/plucked character distinct from the bells
+    const lp = filt('lowpass', freq*6, 1.1);
+    lp.frequency.setValueAtTime(freq*6, t);
+    lp.frequency.exponentialRampToValueAtTime(freq*1.5, t+dur*0.8);
+    const parts=[{m:1,l:1},{m:2,l:0.3}];
+    const oscs=[];
+    parts.forEach(p=>{
+      const o=ctx.createOscillator(); o.type='triangle';
+      o.frequency.value=freq*p.m;
+      const pg=gain(p.l); o.connect(pg).connect(lp);
+      o.start(t); o.stop(t+dur+0.1); oscs.push(o);
+    });
+    lp.connect(env);
+    const tail = pan ? (env.connect(pan), pan) : env;
+    tail.connect(layers.arp.out);
+    setTimeout(()=>{ try{env.disconnect(); lp.disconnect(); if(pan)pan.disconnect();}catch(e){} }, (dur+0.3)*1000);
+  }
+
+  function startArpScheduler(){
+    const tick=()=>{
+      if(state.arp>0.001){
+        triggerArpNote();
+        const stepDur = 0.5 + rng()*0.12; // steady pulse with slight swing
+        arpTimer = setTimeout(tick, stepDur*1000);
+      } else {
+        arpTimer = setTimeout(tick, 700);
+      }
+    };
+    arpTimer = setTimeout(tick, 900);
+  }
+
   // seeded-ish rng so "Reseed" changes the generative character
   function rng(){ seed=(seed*9301+49297)%233280; return seed/233280; }
 
@@ -576,7 +648,7 @@
     state[id]=val;
     if(!ctx) return;
     const L=layers[id]; if(!L) return;
-    if(id==='bells') return; // handled per-note
+    if(id==='bells' || id==='arp') return; // handled per-note
     const target = val * L.max;
     L.g.gain.setTargetAtTime(playing? target:0, ctx.currentTime, 0.9);
   }
@@ -605,7 +677,7 @@
     document.getElementById('status').textContent = on ? 'Now playing' : 'Paused';
     if(!ctx) return;
     LAYER_DEFS.forEach(d=>{
-      if(d.id==='bells') return;
+      if(d.id==='bells' || d.id==='arp') return;
       const L=layers[d.id];
       L.g.gain.setTargetAtTime(on? state[d.id]*L.max : 0, ctx.currentTime, on?1.2:0.6);
     });
