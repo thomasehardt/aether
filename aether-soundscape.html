@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Aether · Ambient Soundscape Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070A12;
+    --bg-grad-1:#0B1120;
+    --bg-grad-2:#060810;
+    --panel:rgba(255,255,255,0.035);
+    --panel-strong:rgba(255,255,255,0.06);
+    --line:rgba(255,255,255,0.09);
+    --line-soft:rgba(255,255,255,0.05);
+    --ink:#E6E9F2;
+    --muted:#8891A9;
+    --faint:#525A72;
+    --aqua:#63D8C6;
+    --aqua-dim:#3f9b8f;
+    --warm:#E0A96A;
+    --violet:#8B7BE0;
+    --shadow:0 24px 60px -20px rgba(0,0,0,0.7);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(120% 90% at 50% -10%, var(--bg-grad-1) 0%, var(--bg) 45%, var(--bg-grad-2) 100%);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100%;
+    overflow-x:hidden;
+  }
+  ::selection{background:rgba(99,216,198,0.25)}
+
+  .wrap{
+    max-width:960px;
+    margin:0 auto;
+    padding:28px 22px 60px;
+    display:flex;
+    flex-direction:column;
+    gap:26px;
+    position:relative;
+    z-index:1;
+  }
+
+  /* ---------- header ---------- */
+  header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:20px;
+  }
+  .mark{display:flex;flex-direction:column;gap:6px}
+  .mark h1{
+    font-family:'Syne',sans-serif;
+    font-weight:800;
+    font-size:clamp(26px,5vw,38px);
+    letter-spacing:-0.02em;
+    line-height:0.95;
+    background:linear-gradient(120deg,var(--ink) 20%,var(--aqua) 120%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .mark .sub{
+    font-family:'Space Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--faint);
+  }
+  .headnote{
+    text-align:right;
+    max-width:230px;
+    font-size:12px;
+    line-height:1.5;
+    color:var(--muted);
+    padding-top:4px;
+  }
+  .headnote b{color:var(--aqua);font-weight:600}
+
+  /* ---------- orb / visualizer ---------- */
+  .stage{
+    display:flex;flex-direction:column;align-items:center;gap:22px;
+  }
+  .orb-shell{
+    position:relative;
+    width:min(340px,80vw);
+    aspect-ratio:1;
+    display:grid;place-items:center;
+  }
+  canvas#viz{position:absolute;inset:0;width:100%;height:100%}
+  .orb-btn{
+    position:relative;z-index:2;
+    width:96px;height:96px;border-radius:50%;
+    border:1px solid var(--line);
+    background:rgba(10,14,24,0.55);
+    backdrop-filter:blur(4px);
+    color:var(--ink);
+    cursor:pointer;
+    display:grid;place-items:center;
+    transition:transform .35s cubic-bezier(.2,.8,.2,1),border-color .3s,box-shadow .4s;
+    box-shadow:0 0 0 0 rgba(99,216,198,0);
+  }
+  .orb-btn:hover{border-color:var(--aqua-dim);transform:scale(1.04)}
+  .orb-btn:focus-visible{outline:2px solid var(--aqua);outline-offset:4px}
+  .orb-btn.playing{
+    border-color:rgba(99,216,198,0.5);
+    box-shadow:0 0 40px -6px rgba(99,216,198,0.35);
+  }
+  .orb-btn svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .orb-btn .ico-pause{display:none}
+  .orb-btn.playing .ico-play{display:none}
+  .orb-btn.playing .ico-pause{display:block}
+  .orb-label{
+    font-family:'Space Mono',monospace;
+    font-size:11px;letter-spacing:0.2em;text-transform:uppercase;
+    color:var(--faint);
+  }
+
+  /* ---------- global sliders row ---------- */
+  .globals{
+    display:flex;gap:26px;width:min(420px,90vw);
+  }
+  .glob{flex:1;display:flex;flex-direction:column;gap:9px}
+  .glob .lab{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-family:'Space Mono',monospace;font-size:10.5px;
+    letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);
+  }
+  .glob .lab span{color:var(--aqua)}
+
+  /* ---------- presets ---------- */
+  .presets{display:flex;flex-wrap:wrap;gap:9px;justify-content:center}
+  .chip{
+    font-family:'Inter',sans-serif;font-size:13px;font-weight:500;
+    color:var(--muted);
+    background:var(--panel);
+    border:1px solid var(--line-soft);
+    padding:8px 16px;border-radius:100px;
+    cursor:pointer;transition:all .25s;
+    display:flex;align-items:center;gap:8px;
+  }
+  .chip .dot{width:6px;height:6px;border-radius:50%;background:var(--faint);transition:all .25s}
+  .chip:hover{color:var(--ink);border-color:var(--line)}
+  .chip.active{
+    color:var(--bg);background:var(--aqua);border-color:var(--aqua);
+    font-weight:600;
+  }
+  .chip.active .dot{background:var(--bg)}
+
+  /* ---------- mixer ---------- */
+  .mixer{
+    background:var(--panel);
+    border:1px solid var(--line-soft);
+    border-radius:18px;
+    padding:8px 8px;
+    box-shadow:var(--shadow);
+  }
+  .layer{
+    display:grid;
+    grid-template-columns:150px 1fr 46px;
+    align-items:center;
+    gap:16px;
+    padding:15px 16px;
+    border-radius:12px;
+    transition:background .25s;
+  }
+  .layer + .layer{border-top:1px solid var(--line-soft)}
+  .layer:hover{background:rgba(255,255,255,0.02)}
+  .lyr-id{display:flex;align-items:center;gap:12px;min-width:0}
+  .lyr-toggle{
+    flex:none;width:34px;height:20px;border-radius:100px;
+    background:rgba(255,255,255,0.09);
+    border:1px solid var(--line);
+    position:relative;cursor:pointer;transition:background .3s,border-color .3s;
+  }
+  .lyr-toggle::after{
+    content:"";position:absolute;top:2px;left:2px;
+    width:14px;height:14px;border-radius:50%;
+    background:var(--faint);transition:transform .3s,background .3s;
+  }
+  .layer.on .lyr-toggle{background:rgba(99,216,198,0.22);border-color:var(--aqua-dim)}
+  .layer.on .lyr-toggle::after{transform:translateX(14px);background:var(--aqua)}
+  .lyr-name{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .lyr-name .n{font-size:14px;font-weight:500;color:var(--ink)}
+  .layer:not(.on) .lyr-name .n{color:var(--muted)}
+  .lyr-name .d{
+    font-family:'Space Mono',monospace;font-size:10px;
+    letter-spacing:0.05em;color:var(--faint);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .lyr-val{
+    font-family:'Space Mono',monospace;font-size:11px;
+    color:var(--muted);text-align:right;
+  }
+
+  /* ---------- range inputs ---------- */
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:22px;background:transparent;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:3px;border-radius:2px;
+    background:linear-gradient(to right,var(--aqua) var(--fill,50%),rgba(255,255,255,0.1) var(--fill,50%));
+  }
+  input[type=range]::-moz-range-track{height:3px;border-radius:2px;background:rgba(255,255,255,0.1)}
+  input[type=range]::-moz-range-progress{height:3px;border-radius:2px;background:var(--aqua)}
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:14px;height:14px;border-radius:50%;margin-top:-5.5px;
+    background:var(--ink);border:2px solid var(--aqua);
+    transition:transform .2s,box-shadow .2s;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;border:2px solid var(--aqua);
+    background:var(--ink);
+  }
+  input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15);box-shadow:0 0 12px rgba(99,216,198,0.5)}
+  input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px rgba(99,216,198,0.25)}
+  .layer:not(.on) input[type=range]::-webkit-slider-runnable-track{
+    background:linear-gradient(to right,var(--faint) var(--fill,50%),rgba(255,255,255,0.08) var(--fill,50%));
+  }
+  .layer:not(.on) input[type=range]::-webkit-slider-thumb{border-color:var(--faint)}
+
+  /* ---------- key selector ---------- */
+  .keyrow{
+    display:flex;align-items:center;gap:14px;
+    justify-content:center;flex-wrap:wrap;
+  }
+  .keyrow .klab{
+    font-family:'Space Mono',monospace;font-size:10.5px;
+    letter-spacing:0.18em;text-transform:uppercase;color:var(--faint);
+  }
+  .keys{display:flex;gap:5px}
+  .key{
+    font-family:'Space Mono',monospace;font-size:12px;
+    width:30px;height:30px;border-radius:8px;
+    display:grid;place-items:center;cursor:pointer;
+    color:var(--muted);background:var(--panel);
+    border:1px solid var(--line-soft);transition:all .2s;
+  }
+  .key:hover{color:var(--ink)}
+  .key.active{color:var(--warm);border-color:rgba(224,169,106,0.5);background:rgba(224,169,106,0.1)}
+  .regen{
+    display:flex;align-items:center;gap:7px;
+    font-family:'Inter';font-size:12.5px;font-weight:500;color:var(--muted);
+    background:none;border:1px solid var(--line-soft);
+    padding:7px 13px;border-radius:100px;cursor:pointer;transition:all .2s;
+  }
+  .regen:hover{color:var(--ink);border-color:var(--line)}
+  .regen svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8}
+
+  footer{
+    text-align:center;font-size:11.5px;color:var(--faint);line-height:1.6;
+    font-family:'Space Mono',monospace;letter-spacing:0.03em;
+  }
+
+  @media (max-width:560px){
+    .headnote{display:none}
+    .layer{grid-template-columns:120px 1fr 40px;gap:10px;padding:14px 10px}
+    .lyr-name .d{display:none}
+    .globals{gap:18px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .orb-btn,.chip,.key,input[type=range]::-webkit-slider-thumb{transition:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark">
+      <h1>AETHER</h1>
+      <div class="sub">Generative Ambient Engine</div>
+    </div>
+    <p class="headnote">Every sound is <b>synthesized live</b> — no samples, no loops. Best with headphones.</p>
+  </header>
+
+  <div class="stage">
+    <div class="orb-shell">
+      <canvas id="viz"></canvas>
+      <button class="orb-btn" id="playBtn" aria-label="Play or pause soundscape">
+        <svg class="ico-play" viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4" fill="currentColor" stroke="none"/></svg>
+        <svg class="ico-pause" viewBox="0 0 24 24"><line x1="8" y1="5" x2="8" y2="19"/><line x1="16" y1="5" x2="16" y2="19"/></svg>
+      </button>
+    </div>
+    <div class="orb-label" id="status">Tap the orb to begin</div>
+
+    <div class="globals">
+      <div class="glob">
+        <div class="lab">Volume <span id="volVal">55</span></div>
+        <input type="range" id="master" min="0" max="100" value="55">
+      </div>
+      <div class="glob">
+        <div class="lab">Space <span id="spaceVal">45</span></div>
+        <input type="range" id="space" min="0" max="100" value="45">
+      </div>
+    </div>
+  </div>
+
+  <div class="presets" id="presets"></div>
+
+  <div class="mixer" id="mixer"></div>
+
+  <div class="keyrow">
+    <span class="klab">Key</span>
+    <div class="keys" id="keys"></div>
+    <button class="regen" id="regen">
+      <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8"/><path d="M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-13.7 5.6L4 16"/><path d="M4 20v-4h4"/></svg>
+      Reseed
+    </button>
+  </div>
+
+  <footer>
+    Aether · procedural sound via the Web Audio API · runs entirely in your browser
+  </footer>
+</div>
+
+<script>
+"use strict";
+(function(){
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- musical data ----
+  const KEYS = { C:32.70, D:36.71, E:41.20, G:49.00, A:55.00 }; // low root (Hz)
+  const KEY_ORDER = ['C','D','E','G','A'];
+  const PENTA = [0,3,5,7,10]; // minor pentatonic (semitones)
+
+  // ---- layer definitions ----
+  const LAYER_DEFS = [
+    { id:'drone', name:'Drone',  desc:'harmonic bed',      base:0.34 },
+    { id:'sub',   name:'Sub',    desc:'deep swell',        base:0.42 },
+    { id:'rain',  name:'Rain',   desc:'filtered noise',    base:0.5  },
+    { id:'waves', name:'Waves',  desc:'ocean wash',        base:0.55 },
+    { id:'wind',  name:'Wind',   desc:'breathing air',     base:0.42 },
+    { id:'bells', name:'Bells',  desc:'generative motes',  base:0.5  },
+  ];
+
+  // ---- presets: {layer: level 0..1}, key ----
+  const PRESETS = {
+    'Rainfall':   { key:'A', layers:{ rain:0.85, drone:0.35, wind:0.22 } },
+    'Deep Ocean': { key:'D', layers:{ waves:0.85, wind:0.3, sub:0.45 } },
+    'Nebula':     { key:'E', layers:{ drone:0.6, sub:0.5, bells:0.45 } },
+    'Rainforest': { key:'G', layers:{ wind:0.32, bells:0.5, rain:0.28 } },
+    'Sanctuary':  { key:'C', layers:{ drone:0.5, bells:0.6, sub:0.32 } },
+  };
+
+  // ---- engine state ----
+  let ctx=null, master=null, comp=null, analyser=null, dryBus=null, reverb=null, revReturn=null;
+  let noise={}, layers={}, started=false, playing=false, seed=Math.random();
+  let curKey='C', masterVol=0.55, spaceAmt=0.45;
+  let bellTimer=null;
+  const state = { drone:0, sub:0, rain:0, waves:0, wind:0, bells:0 }; // 0..1 target levels
+
+  // ================= AUDIO BUILD =================
+  function makeNoise(type, secs){
+    const len = Math.floor(ctx.sampleRate*secs);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    if(type==='white'){ for(let i=0;i<len;i++) d[i]=Math.random()*2-1; }
+    else if(type==='brown'){
+      let last=0;
+      for(let i=0;i<len;i++){ const w=Math.random()*2-1; last=(last+0.02*w)/1.02; d[i]=last*3.4; }
+    } else { // pink (Paul Kellet)
+      let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+      for(let i=0;i<len;i++){
+        const w=Math.random()*2-1;
+        b0=0.99886*b0+w*0.0555179; b1=0.99332*b1+w*0.0750759; b2=0.96900*b2+w*0.1538520;
+        b3=0.86650*b3+w*0.3104856; b4=0.55000*b4+w*0.5329522; b5=-0.7616*b5-w*0.0168980;
+        d[i]=(b0+b1+b2+b3+b4+b5+b6+w*0.5362)*0.11; b6=w*0.115926;
+      }
+    }
+    return buf;
+  }
+
+  function makeReverbIR(secs, decay){
+    const len = Math.floor(ctx.sampleRate*secs);
+    const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for(let ch=0;ch<2;ch++){
+      const d = buf.getChannelData(ch);
+      for(let i=0;i<len;i++){
+        const t = i/len;
+        d[i] = (Math.random()*2-1) * Math.pow(1-t, decay);
+      }
+    }
+    return buf;
+  }
+
+  function src(buf){ const s=ctx.createBufferSource(); s.buffer=buf; s.loop=true; s.start(); return s; }
+  function gain(v){ const g=ctx.createGain(); g.gain.value=v; return g; }
+  function filt(type,freq,q){ const f=ctx.createBiquadFilter(); f.type=type; f.frequency.value=freq; if(q!=null)f.Q.value=q; return f; }
+  // slow LFO -> param
+  function lfo(rate, depth, param, phase){
+    const o=ctx.createOscillator(); o.frequency.value=rate; o.type='sine';
+    const g=gain(depth); o.connect(g).connect(param);
+    if(phase) o.detune.value=phase;
+    o.start(); return o;
+  }
+
+  function buildEngine(){
+    ctx = new (window.AudioContext||window.webkitAudioContext)();
+
+    master = gain(masterVol);
+    comp = ctx.createDynamicsCompressor();
+    comp.threshold.value=-14; comp.knee.value=24; comp.ratio.value=3.2;
+    comp.attack.value=0.02; comp.release.value=0.3;
+    analyser = ctx.createAnalyser(); analyser.fftSize=2048; analyser.smoothingTimeConstant=0.82;
+
+    master.connect(comp).connect(analyser).connect(ctx.destination);
+
+    dryBus = gain(1); dryBus.connect(master);
+    reverb = ctx.createConvolver(); reverb.buffer = makeReverbIR(4.2, 3.0);
+    revReturn = gain(spaceAmt); reverb.connect(revReturn).connect(master);
+
+    noise.white = makeNoise('white',3);
+    noise.pink  = makeNoise('pink',3);
+    noise.brown = makeNoise('brown',3);
+
+    buildRain(); buildWaves(); buildWind(); buildDrone(); buildSub(); buildBells();
+    startBellScheduler();
+  }
+
+  // route a layer's output: dry + reverb send
+  function route(node, layerGain, sendAmt){
+    node.connect(layerGain);
+    layerGain.connect(dryBus);
+    const send = gain(sendAmt); layerGain.connect(send).connect(reverb);
+  }
+
+  function buildRain(){
+    const g = gain(0);
+    const n = src(noise.pink);
+    const hp = filt('highpass',900,0.6);
+    const bell = filt('peaking',3200,0.8); bell.gain.value=6;
+    const lp = filt('lowpass',7000,0.5);
+    n.connect(hp).connect(bell).connect(lp);
+    // subtle intensity flutter
+    const flut = gain(1); lp.connect(flut);
+    lfo(0.13, 0.16, flut.gain, 0);
+    route(flut, g, 0.28);
+    layers.rain = { g, max:0.5 };
+  }
+
+  function buildWaves(){
+    const g = gain(0);
+    const n = src(noise.brown);
+    const lp = filt('lowpass',500,0.9);
+    n.connect(lp);
+    const swell = gain(0.2); lp.connect(swell);
+    // two incommensurate LFOs -> gentle irregular wash
+    lfo(0.055, 0.7, swell.gain, 0);
+    lfo(0.083, 0.35, swell.gain, 90);
+    // filter opens as wave crests
+    lfo(0.055, 260, lp.frequency, 0);
+    route(swell, g, 0.4);
+    layers.waves = { g, max:0.55 };
+  }
+
+  function buildWind(){
+    const g = gain(0);
+    const n = src(noise.pink);
+    const bp = filt('bandpass',650,0.9);
+    n.connect(bp);
+    const amp = gain(0.3); bp.connect(amp);
+    lfo(0.07, 420, bp.frequency, 0);
+    lfo(0.11, 180, bp.frequency, 120);
+    lfo(0.09, 0.22, amp.gain, 0);
+    route(amp, g, 0.45);
+    layers.wind = { g, max:0.42 };
+  }
+
+  function buildDrone(){
+    const g = gain(0);
+    const mix = gain(0.28);
+    const lp = filt('lowpass',1200,0.7);
+    mix.connect(lp);
+    lfo(0.04, 600, lp.frequency, 0); // slow tonal movement
+    const root = KEYS[curKey]*2; // move up an octave for warmth
+    const partials = [
+      {mult:1,   type:'sine',     lvl:1.0, det:-4},
+      {mult:1,   type:'triangle', lvl:0.4, det:+5},
+      {mult:1.5, type:'sine',     lvl:0.6, det:+3}, // fifth
+      {mult:2,   type:'sine',     lvl:0.45,det:-6}, // octave
+      {mult:3,   type:'triangle', lvl:0.16,det:+8}, // shimmer
+    ];
+    const voices = [];
+    partials.forEach((p,i)=>{
+      const o=ctx.createOscillator(); o.type=p.type;
+      o.frequency.value=root*p.mult; o.detune.value=p.det;
+      const vg=gain(p.lvl*0.3);
+      o.connect(vg).connect(mix);
+      lfo(0.05+i*0.017, p.lvl*0.12, vg.gain, i*40); // breathing per partial
+      o.start();
+      voices.push({o, base:p.mult});
+    });
+    route(lp, g, 0.6);
+    layers.drone = { g, max:0.34, voices, mix };
+  }
+
+  function buildSub(){
+    const g = gain(0);
+    const root = KEYS[curKey];
+    const o1=ctx.createOscillator(); o1.type='sine'; o1.frequency.value=root;
+    const o2=ctx.createOscillator(); o2.type='sine'; o2.frequency.value=root*2; o2.detune.value=-3;
+    const mix=gain(0.5);
+    const o2g=gain(0.35);
+    o1.connect(mix); o2.connect(o2g).connect(mix);
+    const swell=gain(0.4); mix.connect(swell);
+    lfo(0.045, 0.32, swell.gain, 0);
+    o1.start(); o2.start();
+    route(swell, g, 0.35);
+    layers.sub = { g, max:0.42, voices:[o1,o2], roots:[1,2] };
+  }
+
+  function buildBells(){
+    const g = gain(0.9); // per-note enveloped, so layer gain acts as on/off level
+    g.connect(dryBus);
+    const send = gain(0.85); g.connect(send).connect(reverb);
+    layers.bells = { g, max:1.0, out:g };
+  }
+
+  function triggerBell(){
+    if(!ctx || state.bells<=0.001) return;
+    const lvl = state.bells;
+    const root = KEYS[curKey]*4;
+    const octave = Math.floor(rng()*3);
+    const step = PENTA[Math.floor(rng()*PENTA.length)];
+    const freq = root * Math.pow(2, octave + step/12);
+    const t = ctx.currentTime;
+    const dur = 2.4 + rng()*2.2;
+    const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if(pan) pan.pan.value = (rng()*2-1)*0.7;
+    const env = gain(0);
+    const peak = 0.16*lvl;
+    env.gain.setValueAtTime(0.0001, t);
+    env.gain.exponentialRampToValueAtTime(peak, t+0.012);
+    env.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    // partials: carrier + soft overtones
+    const parts=[{m:1,l:1},{m:2,l:0.4},{m:3.01,l:0.16}];
+    const oscs=[];
+    parts.forEach(p=>{
+      const o=ctx.createOscillator(); o.type='sine';
+      o.frequency.value=freq*p.m;
+      const pg=gain(p.l); o.connect(pg).connect(env);
+      o.start(t); o.stop(t+dur+0.1); oscs.push(o);
+    });
+    const tail = pan ? (env.connect(pan), pan) : env;
+    tail.connect(layers.bells.out);
+    setTimeout(()=>{ try{env.disconnect(); if(pan)pan.disconnect();}catch(e){} }, (dur+0.3)*1000);
+  }
+
+  function startBellScheduler(){
+    const tick=()=>{
+      if(state.bells>0.001){
+        triggerBell();
+        // denser when louder
+        const density = 1 - state.bells*0.45;
+        bellTimer = setTimeout(tick, (2.0 + rng()*3.5)*density*1000);
+      } else {
+        bellTimer = setTimeout(tick, 700);
+      }
+    };
+    bellTimer = setTimeout(tick, 800);
+  }
+
+  // seeded-ish rng so "Reseed" changes the generative character
+  function rng(){ seed=(seed*9301+49297)%233280; return seed/233280; }
+
+  // ================= CONTROL =================
+  function setLayer(id, val){
+    state[id]=val;
+    if(!ctx) return;
+    const L=layers[id]; if(!L) return;
+    if(id==='bells') return; // handled per-note
+    const target = val * L.max;
+    L.g.gain.setTargetAtTime(playing? target:0, ctx.currentTime, 0.9);
+  }
+
+  function applyKey(){
+    if(!ctx) return;
+    const now=ctx.currentTime;
+    if(layers.drone){
+      const root=KEYS[curKey]*2;
+      const mults=[1,1,1.5,2,3];
+      layers.drone.voices.forEach((v,i)=>{
+        v.o.frequency.setTargetAtTime(root*mults[i], now, 0.4);
+      });
+    }
+    if(layers.sub){
+      const root=KEYS[curKey];
+      layers.sub.voices.forEach((o,i)=>{
+        o.frequency.setTargetAtTime(root*layers.sub.roots[i], now, 0.4);
+      });
+    }
+  }
+
+  function setPlaying(on){
+    playing=on;
+    document.getElementById('playBtn').classList.toggle('playing',on);
+    document.getElementById('status').textContent = on ? 'Now playing' : 'Paused';
+    if(!ctx) return;
+    LAYER_DEFS.forEach(d=>{
+      if(d.id==='bells') return;
+      const L=layers[d.id];
+      L.g.gain.setTargetAtTime(on? state[d.id]*L.max : 0, ctx.currentTime, on?1.2:0.6);
+    });
+  }
+
+  async function togglePlay(){
+    if(!started){ buildEngine(); started=true; renderMixerState(); }
+    if(ctx.state==='suspended') await ctx.resume();
+    setPlaying(!playing);
+  }
+
+  // ================= UI RENDER =================
+  const mixerEl=document.getElementById('mixer');
+  function buildMixerUI(){
+    LAYER_DEFS.forEach(d=>{
+      const row=document.createElement('div');
+      row.className='layer'; row.dataset.id=d.id;
+      row.innerHTML=`
+        <div class="lyr-id">
+          <div class="lyr-toggle" role="switch" aria-label="Toggle ${d.name}"></div>
+          <div class="lyr-name"><span class="n">${d.name}</span><span class="d">${d.desc}</span></div>
+        </div>
+        <input type="range" min="0" max="100" value="0" aria-label="${d.name} level">
+        <span class="lyr-val">0</span>`;
+      const tog=row.querySelector('.lyr-toggle');
+      const rng=row.querySelector('input');
+      const val=row.querySelector('.lyr-val');
+      const setFill=()=>rng.style.setProperty('--fill', rng.value+'%');
+      const commit=(v)=>{
+        v=Math.max(0,Math.min(100,v));
+        rng.value=v; val.textContent=v; setFill();
+        row.classList.toggle('on', v>0);
+        setLayer(d.id, v/100);
+        syncPresetHighlight();
+      };
+      rng.addEventListener('input',()=>commit(+rng.value));
+      tog.addEventListener('click',()=>{
+        commit(+rng.value>0 ? 0 : Math.round(d.base*100));
+      });
+      row._commit=commit;
+      mixerEl.appendChild(row);
+    });
+  }
+  function renderMixerState(){
+    [...mixerEl.children].forEach(row=>{
+      const id=row.dataset.id;
+      const v=Math.round(state[id]*100);
+      row._commit(v);
+    });
+  }
+  function setLayerUI(id,v01){
+    const row=[...mixerEl.children].find(r=>r.dataset.id===id);
+    if(row) row._commit(Math.round(v01*100));
+  }
+
+  // presets
+  const presetsEl=document.getElementById('presets');
+  Object.keys(PRESETS).forEach(name=>{
+    const c=document.createElement('button');
+    c.className='chip'; c.innerHTML=`<span class="dot"></span>${name}`;
+    c.addEventListener('click',()=>applyPreset(name));
+    presetsEl.appendChild(c);
+  });
+  function applyPreset(name){
+    const p=PRESETS[name];
+    // key
+    curKey=p.key; renderKeys(); applyKey();
+    // levels
+    LAYER_DEFS.forEach(d=>{
+      const lvl = p.layers[d.id]||0;
+      state[d.id]=lvl;
+      if(started) setLayerUI(d.id,lvl); else setLayer(d.id,lvl);
+    });
+    if(started) renderMixerState();
+    [...presetsEl.children].forEach(ch=>ch.classList.toggle('active', ch.textContent.trim()===name));
+    if(started && !playing) togglePlay();
+  }
+  function syncPresetHighlight(){
+    // clear preset highlight if user manually diverges
+    let match=null;
+    for(const name in PRESETS){
+      const p=PRESETS[name]; let ok=(p.key===curKey);
+      LAYER_DEFS.forEach(d=>{
+        const want=Math.round((p.layers[d.id]||0)*100);
+        if(Math.abs(want-Math.round(state[d.id]*100))>1) ok=false;
+      });
+      if(ok){match=name;break;}
+    }
+    [...presetsEl.children].forEach(ch=>ch.classList.toggle('active', ch.textContent.trim()===match));
+  }
+
+  // keys
+  const keysEl=document.getElementById('keys');
+  function renderKeys(){
+    keysEl.innerHTML='';
+    KEY_ORDER.forEach(k=>{
+      const b=document.createElement('button');
+      b.className='key'+(k===curKey?' active':''); b.textContent=k;
+      b.addEventListener('click',()=>{ curKey=k; renderKeys(); applyKey(); syncPresetHighlight(); });
+      keysEl.appendChild(b);
+    });
+  }
+  renderKeys();
+
+  // globals
+  const masterSl=document.getElementById('master'), volVal=document.getElementById('volVal');
+  const spaceSl=document.getElementById('space'), spaceVal=document.getElementById('spaceVal');
+  const setSlFill=(el)=>el.style.setProperty('--fill', el.value+'%');
+  setSlFill(masterSl); setSlFill(spaceSl);
+  masterSl.addEventListener('input',()=>{
+    masterVol=+masterSl.value/100; volVal.textContent=masterSl.value; setSlFill(masterSl);
+    if(master) master.gain.setTargetAtTime(masterVol, ctx.currentTime, 0.05);
+  });
+  spaceSl.addEventListener('input',()=>{
+    spaceAmt=+spaceSl.value/100; spaceVal.textContent=spaceSl.value; setSlFill(spaceSl);
+    if(revReturn) revReturn.gain.setTargetAtTime(spaceAmt*1.1, ctx.currentTime, 0.1);
+  });
+
+  document.getElementById('regen').addEventListener('click',()=>{
+    seed=Math.random()*233280;
+    const s=document.getElementById('status');
+    const prev=s.textContent; s.textContent='Reseeded ✦';
+    setTimeout(()=>{ s.textContent = playing?'Now playing':(started?'Paused':'Tap the orb to begin'); }, 1100);
+  });
+
+  document.getElementById('playBtn').addEventListener('click',togglePlay);
+  buildMixerUI();
+
+  // ================= VISUALIZER =================
+  const canvas=document.getElementById('viz'), g=canvas.getContext('2d');
+  let W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
+  function resize(){
+    const r=canvas.getBoundingClientRect();
+    W=r.width; H=r.height;
+    canvas.width=W*DPR; canvas.height=H*DPR;
+    g.setTransform(DPR,0,0,DPR,0,0);
+  }
+  new ResizeObserver(resize).observe(canvas); resize();
+
+  let freq=null, timeData=null, rot=0, idle=0;
+  function draw(){
+    requestAnimationFrame(draw);
+    g.clearRect(0,0,W,H);
+    const cx=W/2, cy=H/2;
+    const baseR=Math.min(W,H)*0.30;
+
+    let low=0, mid=0, high=0, level=0;
+    if(analyser){
+      if(!freq){ freq=new Uint8Array(analyser.frequencyBinCount); timeData=new Uint8Array(analyser.fftSize); }
+      analyser.getByteFrequencyData(freq); analyser.getByteTimeDomainData(timeData);
+      const n=freq.length;
+      for(let i=0;i<n;i++){ const v=freq[i]/255; if(i<n*0.08)low+=v; else if(i<n*0.35)mid+=v; else high+=v; }
+      low/=(n*0.08); mid/=(n*0.27); high/=(n*0.65);
+      let rms=0; for(let i=0;i<timeData.length;i+=8){const v=(timeData[i]-128)/128; rms+=v*v;}
+      level=Math.sqrt(rms/(timeData.length/8));
+    }
+    idle += reduceMotion?0.004:0.012;
+    const breathe = playing ? (0.5+0.5*Math.sin(idle*1.4)) : (0.5+0.5*Math.sin(idle));
+    const energy = playing ? level : 0;
+    if(!reduceMotion) rot += 0.0016 + energy*0.01;
+
+    // central glow
+    const glowR = baseR*(0.7 + breathe*0.15 + low*0.5);
+    const grad=g.createRadialGradient(cx,cy,0,cx,cy,glowR*1.8);
+    grad.addColorStop(0,`rgba(99,216,198,${0.10+low*0.28})`);
+    grad.addColorStop(0.45,`rgba(139,123,224,${0.05+mid*0.14})`);
+    grad.addColorStop(1,'rgba(7,10,18,0)');
+    g.fillStyle=grad; g.beginPath(); g.arc(cx,cy,glowR*1.8,0,Math.PI*2); g.fill();
+
+    // reactive rings (blobs)
+    drawRing(cx,cy, baseR*(1.05+low*0.35), 96, low*0.9+0.15, rot, `rgba(99,216,198,${0.5+low*0.4})`, 1.6, low);
+    drawRing(cx,cy, baseR*(0.82+mid*0.3), 80, mid*0.8+0.12, -rot*1.3+1, `rgba(139,123,224,${0.35+mid*0.4})`, 1.2, mid);
+    drawRing(cx,cy, baseR*(0.6+high*0.25), 64, high*0.7+0.1, rot*1.7+2, `rgba(224,169,106,${0.3+high*0.5})`, 1.0, high);
+
+    // idle dashed guide when silent
+    if(!playing){
+      g.strokeStyle='rgba(255,255,255,0.06)'; g.lineWidth=1;
+      g.setLineDash([2,7]);
+      g.beginPath(); g.arc(cx,cy,baseR*(1.05+breathe*0.05),0,Math.PI*2); g.stroke();
+      g.setLineDash([]);
+    }
+  }
+
+  function drawRing(cx,cy,R,points,amp,phase,color,lw,band){
+    g.beginPath();
+    for(let i=0;i<=points;i++){
+      const a=(i/points)*Math.PI*2;
+      let dev=0;
+      if(freq){
+        const idx=(i*3)%freq.length;
+        dev=(freq[idx]/255)*amp;
+      }
+      const wob=Math.sin(a*3+phase)*0.04 + Math.sin(a*7-phase*1.5)*0.02;
+      const rr=R*(1 + dev*0.5 + wob*(0.4+band));
+      const x=cx+Math.cos(a+phase*0.2)*rr;
+      const y=cy+Math.sin(a+phase*0.2)*rr;
+      i===0?g.moveTo(x,y):g.lineTo(x,y);
+    }
+    g.closePath();
+    g.strokeStyle=color; g.lineWidth=lw;
+    g.shadowColor=color; g.shadowBlur=12+band*20;
+    g.stroke();
+    g.shadowBlur=0;
+  }
+  draw();
+
+  // keyboard: space to toggle
+  window.addEventListener('keydown',e=>{
+    if(e.code==='Space' && e.target===document.body){ e.preventDefault(); togglePlay(); }
+  });
+})();
+</script>
+</body>
+</html>
