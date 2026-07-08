@@ -1,6 +1,6 @@
 # Aether
 
-**v0.3.0**
+**v0.4.0**
 
 > **AI-generated software.** The overwhelming majority of this project's code, audio design, and documentation was written by Claude (Anthropic), directed and reviewed by a human. See git history for the full record — commits are marked with Claude's co-authorship.
 
