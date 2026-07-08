@@ -8,6 +8,7 @@ cd "$(dirname "$0")"
 
 mkdir -p www
 cp ../aether-soundscape.html www/index.html
+cp ../guide.html www/guide.html
 cp ../service-worker.js www/service-worker.js
 cp -r ../fonts www/
 cp -r ../icons www/

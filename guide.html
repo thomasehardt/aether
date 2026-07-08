@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide · Aether</title>
+<meta name="theme-color" content="#070A12">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+  @font-face{font-family:'Syne';font-style:normal;font-weight:600 800;font-display:swap;src:url('fonts/syne-var.woff2') format('woff2');}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:400 600;font-display:swap;src:url('fonts/inter-var.woff2') format('woff2');}
+  @font-face{font-family:'Space Mono';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/spacemono-400.woff2') format('woff2');}
+  @font-face{font-family:'Space Mono';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/spacemono-700.woff2') format('woff2');}
+
+  :root{
+    --bg:#070A12;
+    --bg-grad-1:#0B1120;
+    --bg-grad-2:#060810;
+    --panel:rgba(255,255,255,0.035);
+    --line:rgba(255,255,255,0.09);
+    --line-soft:rgba(255,255,255,0.05);
+    --ink:#E6E9F2;
+    --muted:#8891A9;
+    --faint:#525A72;
+    --aqua:#63D8C6;
+    --aqua-dim:#3f9b8f;
+    --warm:#E0A96A;
+    --violet:#8B7BE0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  html,body{height:100%}
+  body{
+    background:radial-gradient(120% 60% at 50% -10%, var(--bg-grad-1) 0%, var(--bg) 45%, var(--bg-grad-2) 100%);
+    background-attachment:fixed;
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.6;
+  }
+  ::selection{background:rgba(99,216,198,0.25)}
+  a{color:var(--aqua)}
+  a:focus-visible,.cta:focus-visible{outline:2px solid var(--aqua);outline-offset:3px;border-radius:2px}
+
+  .wrap{max-width:760px;margin:0 auto;padding:0 22px}
+
+  /* ---------- header ---------- */
+  header{
+    position:sticky;top:0;z-index:10;
+    backdrop-filter:blur(10px);
+    background:rgba(7,10,18,0.72);
+    border-bottom:1px solid var(--line-soft);
+  }
+  header .wrap{
+    max-width:900px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding-top:16px;padding-bottom:16px;
+  }
+  .wordmark{
+    font-family:'Syne',sans-serif;font-weight:800;font-size:16px;letter-spacing:0.02em;
+    color:var(--ink);text-decoration:none;
+  }
+  .navlinks{display:flex;align-items:center;gap:20px}
+  .navlinks a{
+    font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--muted);text-decoration:none;transition:color .2s;
+  }
+  .navlinks a:hover{color:var(--ink)}
+  .navlinks .launch{
+    color:var(--bg);background:var(--aqua);padding:7px 14px;border-radius:100px;
+    font-weight:700;
+  }
+  .navlinks .launch:hover{background:#7fe4d4;color:var(--bg)}
+
+  /* ---------- hero ---------- */
+  .hero{max-width:900px;margin:0 auto;padding:64px 22px 40px;text-align:center;position:relative}
+  .rings{
+    position:relative;width:220px;height:220px;margin:0 auto 28px;
+  }
+  .rings::before,.rings::after,.rings i{
+    content:'';position:absolute;inset:0;border-radius:50%;
+    border:1px solid rgba(99,216,198,0.35);
+  }
+  .rings::before{
+    inset:36px;border-color:rgba(139,123,224,0.32);
+    animation:breathe 7s ease-in-out infinite;
+  }
+  .rings::after{
+    inset:68px;border-color:rgba(224,169,106,0.4);
+    animation:breathe 5.5s ease-in-out infinite 0.6s;
+  }
+  .rings i{
+    display:block;animation:breathe 9s ease-in-out infinite 0.3s;
+    background:radial-gradient(circle at center, rgba(99,216,198,0.14), transparent 70%);
+  }
+  @keyframes breathe{
+    0%,100%{transform:scale(1);opacity:0.7}
+    50%{transform:scale(1.08);opacity:1}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .rings::before,.rings::after,.rings i{animation:none}
+  }
+  .eyebrow{
+    font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;
+    color:var(--faint);margin-bottom:14px;
+  }
+  h1.title{
+    font-family:'Syne',sans-serif;font-weight:800;
+    font-size:clamp(30px,6vw,48px);letter-spacing:-0.02em;line-height:1.05;
+    background:linear-gradient(120deg,var(--ink) 20%,var(--aqua) 130%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    margin-bottom:16px;
+  }
+  .hero p{
+    max-width:520px;margin:0 auto;color:var(--muted);font-size:16px;
+  }
+  .cta{
+    display:inline-flex;align-items:center;gap:8px;margin-top:28px;
+    background:var(--aqua);color:var(--bg);font-weight:700;font-size:14px;
+    padding:12px 24px;border-radius:100px;text-decoration:none;
+    transition:transform .2s, box-shadow .2s;
+    box-shadow:0 0 0 0 rgba(99,216,198,0.4);
+  }
+  .cta:hover{transform:translateY(-1px);box-shadow:0 8px 24px -8px rgba(99,216,198,0.5)}
+
+  /* ---------- sections ---------- */
+  main{padding-bottom:80px}
+  section{padding:56px 0;border-top:1px solid var(--line-soft)}
+  section:first-of-type{border-top:none}
+  section > .eyebrow{margin-bottom:10px}
+  h2{
+    font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(22px,3.4vw,28px);
+    letter-spacing:-0.01em;margin-bottom:18px;
+  }
+  section > p.lede{color:var(--muted);font-size:16px;max-width:600px;margin-bottom:8px}
+  p{margin-bottom:14px}
+  p:last-child{margin-bottom:0}
+
+  .kicker{
+    font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;
+  }
+
+  /* layer family groups */
+  .family{margin-top:32px}
+  .family:first-child{margin-top:0}
+  .family-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .family-name{font-family:'Syne',sans-serif;font-weight:700;font-size:15px}
+  .family-desc{color:var(--faint);font-size:13px;font-family:'Space Mono',monospace}
+  .layers{display:flex;flex-direction:column;gap:1px;border-radius:14px;overflow:hidden;border:1px solid var(--line-soft)}
+  .layer{
+    background:var(--panel);padding:14px 16px;display:grid;grid-template-columns:110px 1fr;gap:14px;
+  }
+  .layer .n{font-weight:600;font-size:14px}
+  .layer .d{color:var(--muted);font-size:13.5px}
+  @media (max-width:560px){
+    .layer{grid-template-columns:1fr;gap:4px}
+    .navlinks a:not(.launch){display:none}
+    .wordmark{font-size:15px}
+  }
+
+  /* generic info cards (installing, etc) */
+  .cards{display:flex;flex-direction:column;gap:12px;margin-top:20px}
+  .card{
+    background:var(--panel);border:1px solid var(--line-soft);border-radius:14px;padding:18px 20px;
+  }
+  .card h3{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:8px}
+  .card p{font-size:14.5px;color:var(--muted);margin-bottom:6px}
+  .card code, code{
+    font-family:'Space Mono',monospace;font-size:12.5px;background:rgba(255,255,255,0.06);
+    padding:2px 6px;border-radius:5px;color:var(--ink);overflow-wrap:break-word;
+  }
+
+  /* story cards (deep dives) */
+  .story{
+    border-left:2px solid var(--aqua-dim);padding:4px 0 4px 22px;margin-bottom:36px;
+  }
+  .story:last-child{margin-bottom:0}
+  .story h3{font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-bottom:10px;color:var(--ink)}
+  .story p{color:var(--muted);font-size:14.5px}
+  .story p strong{color:var(--ink);font-weight:600}
+
+  footer{
+    text-align:center;padding:48px 22px 60px;color:var(--faint);
+    font-family:'Space Mono',monospace;font-size:11.5px;letter-spacing:0.03em;line-height:1.8;
+  }
+  footer a{color:var(--faint);text-decoration:underline;text-underline-offset:2px;transition:color .2s}
+  footer a:hover{color:var(--aqua)}
+  .footlinks{display:flex;justify-content:center;gap:18px;margin-bottom:14px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="wordmark" href="index.html">AETHER</a>
+    <nav class="navlinks">
+      <a href="#mixer">Mixer</a>
+      <a href="#built">How it's built</a>
+      <a class="launch" href="index.html">Launch</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="rings"><i></i></div>
+  <div class="eyebrow">Guide</div>
+  <h1 class="title">How Aether works</h1>
+  <p>A generative ambient soundscape, built from nine layers synthesized live in the browser — no samples, no loops. Here's what every control does, and a few notes on why some of it works the way it does.</p>
+  <a class="cta" href="index.html">Launch Aether →</a>
+</div>
+
+<main class="wrap">
+
+  <section id="start">
+    <div class="eyebrow">Getting started</div>
+    <h2>Nothing is recorded</h2>
+    <p class="lede">Tap the orb to start. Everything is off by default — turn on whichever layers you want from the mixer underneath it. The space bar also toggles play/pause.</p>
+    <p>Every sound you hear — the drone, the rain, the bells — is generated fresh by the Web Audio API the moment you press play. There's no audio file anywhere in the app. Reload the page and it's the same instrument, but never quite the same performance: the generative layers pick new notes and patterns each time.</p>
+  </section>
+
+  <section id="mixer">
+    <div class="eyebrow">The mixer</div>
+    <h2>Nine layers, three families</h2>
+    <p class="lede">Each layer has an on/off switch and a level slider. They fall into three roles, color-coded the same way the app's own visualizer colors its low, mid, and high frequency bands.</p>
+
+    <div class="family">
+      <div class="family-head">
+        <span class="dot" style="background:var(--aqua)"></span>
+        <span class="family-name">Harmonic bed</span>
+        <span class="family-desc">— the tone everything else sits on</span>
+      </div>
+      <div class="layers">
+        <div class="layer"><span class="n">Drone</span><span class="d">Five sine and triangle partials tuned to the current key's root, fifth, and octave, each slowly breathing in volume. The steady low hum underneath everything.</span></div>
+        <div class="layer"><span class="n">Pad</span><span class="d">A slow, choir-like chord — three detuned sawtooth voices per note — that drifts to a new chord every 15–25 seconds, in step with Bells and Arp. See "Giving the generators a memory" below.</span></div>
+        <div class="layer"><span class="n">Sub</span><span class="d">Two sine waves an octave apart at the root note, swelling slowly. Felt more than heard — the floor of the mix.</span></div>
+      </div>
+    </div>
+
+    <div class="family">
+      <div class="family-head">
+        <span class="dot" style="background:var(--violet)"></span>
+        <span class="family-name">Texture</span>
+        <span class="family-desc">— filtered noise, shaped into weather</span>
+      </div>
+      <div class="layers">
+        <div class="layer"><span class="n">Rain</span><span class="d">Pink noise through a highpass and a peaking filter, with a slow intensity flutter — the character of steady rainfall.</span></div>
+        <div class="layer"><span class="n">Waves</span><span class="d">Brown noise through a lowpass filter that opens and closes on two independent slow cycles, so the "surf" never quite repeats itself.</span></div>
+        <div class="layer"><span class="n">Wind</span><span class="d">Pink noise through a bandpass filter that wanders in frequency — an airy, breathing gust rather than a fixed hiss.</span></div>
+      </div>
+    </div>
+
+    <div class="family">
+      <div class="family-head">
+        <span class="dot" style="background:var(--warm)"></span>
+        <span class="family-name">Generative</span>
+        <span class="family-desc">— melodic, and different every time</span>
+      </div>
+      <div class="layers">
+        <div class="layer"><span class="n">Bells</span><span class="d">Individual plucked notes, picked at irregular intervals from a pentatonic scale — mostly drawn toward the current shared chord, occasionally wandering off it.</span></div>
+        <div class="layer"><span class="n">Arp</span><span class="d">Short melodic phrases played on a physically modeled plucked string, not a synthesized tone. See "The feedback loop that exploded" below.</span></div>
+        <div class="layer"><span class="n">Shimmer</span><span class="d">Quiet, high overtones two-plus octaves above the drone, swelling and fading over 30–40 second cycles.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="key">
+    <div class="eyebrow">Key &amp; harmony</div>
+    <h2>Five keys, one shared chord</h2>
+    <p>The key selector (C, D, E, G, A) retunes Drone, Pad, Sub, and Shimmer live, without restarting anything. Bells and the Arp phrase generator both read the current key too, picking their notes from a minor pentatonic scale built on it.</p>
+    <p>More than that: Bells, Arp, and the Pad's chord all orbit a single, slowly-drifting tonal center, rather than each picking notes on its own. That's a deliberate design decision, not just a scale choice — the full story is under "Giving the generators a memory."</p>
+  </section>
+
+  <section id="controls">
+    <div class="eyebrow">Everything else</div>
+    <h2>Presets, Reseed, and the master controls</h2>
+    <p><strong style="color:var(--ink)">Presets</strong> — five one-tap starting points (Rainfall, Deep Ocean, Nebula, Rainforest, Sanctuary), each setting a key and a specific layer mix. Touch any slider afterward and the preset highlight clears — you've made it your own from there.</p>
+    <p><strong style="color:var(--ink)">Reseed</strong> — Bells and Arp draw from a repeatable-but-varying pattern generator. Reseed gives them a fresh pattern to draw from, without restarting the piece.</p>
+    <p><strong style="color:var(--ink)">Volume &amp; Space</strong> — Volume is overall loudness. Space controls how much signal is sent to a shared reverb; turning it up moves the whole mix into a larger virtual room.</p>
+  </section>
+
+  <section id="install">
+    <div class="eyebrow">Getting it elsewhere</div>
+    <h2>Web, installable, or native Android</h2>
+    <div class="cards">
+      <div class="card">
+        <h3>In a browser</h3>
+        <p>Just open the app — nothing to install. On mobile, use "Add to Home screen" to install it as a standalone, installable, offline-capable app.</p>
+      </div>
+      <div class="card">
+        <h3>Native Android app</h3>
+        <p>A fully offline Android build exists outside the Play Store — no ads, no tracking, no network permission at all. Two ways to get it:</p>
+        <p>Sideload the latest build directly: <code>https://thomasehardt.github.io/<wbr>aether/<wbr>aether-latest.apk</code></p>
+        <p>Or add the self-hosted F-Droid repo in the F-Droid app for real update notifications: <code>https://thomasehardt.github.io/<wbr>aether/<wbr>fdroid-repo/<wbr>repo</code></p>
+      </div>
+      <div class="card">
+        <h3>Source</h3>
+        <p>Aether is MIT-licensed and the full source (web app, Android project, this page) lives at <code>github.com/thomasehardt/aether</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="built">
+    <div class="eyebrow">How it's built</div>
+    <h2>A few notes for the curious</h2>
+    <p class="lede">Some of the more interesting decisions and mistakes along the way.</p>
+
+    <div style="margin-top:32px">
+
+      <div class="story">
+        <h3>Nothing here is a recording</h3>
+        <p>The entire instrument is oscillators — sine, triangle, sawtooth — and three colors of noise (white, pink, brown), run through filters and envelopes built fresh in the browser's Web Audio graph every time you press play. There isn't a single sample anywhere in the app, which is also why the whole thing fits in one HTML file.</p>
+      </div>
+
+      <div class="story">
+        <h3>The feedback loop that exploded</h3>
+        <p>The Arp layer was originally a filtered triangle wave — a generic synth "pluck." Making it sound like an actual plucked string called for real physical modeling: Karplus-Strong synthesis, where a burst of noise is fed into a short delay line wired back into itself, and the loop's own resonance <em>becomes</em> the string's pitch and timbre.</p>
+        <p>The first version used a resonant filter (a <code>BiquadFilterNode</code>) as the damping stage inside that feedback loop. Chrome immediately logged a warning: <em>"BiquadFilterNode: state is bad, probably due to unstable filter."</em> Rendering the exact same construct offline and inspecting the raw samples confirmed it — the signal's peak amplitude went from about 1 to over 10<sup>24</sup> within two seconds. Not a decaying pluck. A runaway feedback loop.</p>
+        <p>The fix was to go back to the original 1983 Karplus-Strong paper's own damping stage: a simple two-tap moving average, pure delay-and-gain math with no resonance possible, so the loop's total gain can never exceed the feedback coefficient at any frequency. <strong>Provably stable</strong> — and simpler than what it replaced.</p>
+      </div>
+
+      <div class="story">
+        <h3>The filter on the wrong side</h3>
+        <p>Shimmer's high, airy overtones were disappearing entirely, no matter how much gain got added upstream. The instinct was "it's too quiet, turn it up" — which changed nothing, repeatedly.</p>
+        <p>Measuring the actual output energy directly, instead of guessing from the code, found the signal flatlined at the noise floor regardless of gain. The real bug: the highpass filter meant to keep Shimmer's tone airy was set to a cutoff <em>above</em> the pitch of Shimmer's own oscillators — so it was eating almost the entire signal before any gain stage ever saw it. No amount of gain fixes a filter on the wrong side of its own source.</p>
+      </div>
+
+      <div class="story">
+        <h3>Giving the generators a memory</h3>
+        <p>Bells and Arp originally picked notes completely independently, uniformly at random from the scale. Technically harmonic — same scale — but they never sounded like they were listening to each other.</p>
+        <p>The fix was a single piece of shared state: a tonal center that drifts by one scale step every 15–25 seconds. Bells' note choice and Arp's melodic phrases both lean toward it, and the Pad's chord follows the same center. Three generative layers now drift through the same loose chord progression together, without ever being told to play the "same" notes.</p>
+      </div>
+
+      <div class="story">
+        <h3>Written by an AI, on purpose</h3>
+        <p>The overwhelming majority of Aether's code, sound design, and this page itself were written by Claude, an AI agent made by Anthropic — directed and reviewed by a human throughout, including catching and fixing both bugs above by actually measuring behavior rather than trusting that the code looked right. The full commit history, with Claude's co-authorship marked on each one, is public in the source repository.</p>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="footlinks">
+    <a href="index.html">Launch Aether</a>
+    <a href="https://github.com/thomasehardt/aether">Source on GitHub</a>
+    <a href="https://github.com/thomasehardt/aether/blob/main/LICENSE">MIT License</a>
+  </div>
+  Aether · generative ambient soundscape engine
+</footer>
+
+</body>
+</html>

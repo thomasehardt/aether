@@ -1,6 +1,6 @@
 const CACHE_NAME = 'aether-v3';
 const SHELL = [
-  './aether-soundscape.html',
+  './index.html',
   './guide.html',
   './manifest.json',
   './icons/icon-192.png',
