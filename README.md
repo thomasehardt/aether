@@ -16,6 +16,7 @@ Open `aether-soundscape.html` in a browser to use it.
 - "Reseed" button to vary the generative bell and arpeggiator patterns
 - Reactive canvas visualizer driven by a live audio analyser
 - No dependencies, no build step — a single self-contained HTML file
+- Installable PWA (manifest + service worker) — works offline after the first load, gets a proper home-screen icon
 
 ## Usage
 
@@ -25,7 +26,7 @@ Just open `aether-soundscape.html` directly in a browser, or serve the directory
 python3 -m http.server
 ```
 
-Then visit the served URL and click the orb to start.
+Then visit the served URL and click the orb to start. On mobile, use the browser's "Add to Home screen" / "Install app" option to install it as a standalone app (requires serving over HTTP(S), not `file://` — service workers need a secure context).
 
 ## Development
 
