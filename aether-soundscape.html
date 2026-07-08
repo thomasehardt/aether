@@ -596,7 +596,7 @@
     const deg = arpPhrase[arpStep % arpPhrase.length];
     arpStep++;
     if(arpStep>=arpPhrase.length && rng()<0.35) regenArpPhrase(); // occasionally vary the phrase
-    const root = KEYS[curKey]*2; // mid register, below bells
+    const root = KEYS[curKey]*4; // same register as bells' low end, so it reads as a melodic voice
     const octave = Math.floor(deg/PENTA.length);
     const step = PENTA[deg % PENTA.length];
     const freq = root * Math.pow(2, octave + step/12);
@@ -605,15 +605,16 @@
     const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
     if(pan) pan.pan.value = (rng()*2-1)*0.5;
     const env = gain(0);
-    const peak = 0.15*lvl;
+    const peak = 0.24*lvl;
     env.gain.setValueAtTime(0.0001, t);
     env.gain.exponentialRampToValueAtTime(peak, t+0.006);
     env.gain.exponentialRampToValueAtTime(0.0001, t+dur);
-    // plucky lowpass sweep gives it a struck/plucked character distinct from the bells
-    const lp = filt('lowpass', freq*6, 1.1);
-    lp.frequency.setValueAtTime(freq*6, t);
-    lp.frequency.exponentialRampToValueAtTime(freq*1.5, t+dur*0.8);
-    const parts=[{m:1,l:1},{m:2,l:0.3}];
+    // plucky lowpass sweep gives it a struck/plucked character distinct from the bells;
+    // kept wide enough that it doesn't filter the note into inaudibility
+    const lp = filt('lowpass', freq*10, 1.1);
+    lp.frequency.setValueAtTime(freq*10, t);
+    lp.frequency.exponentialRampToValueAtTime(freq*3, t+dur*0.8);
+    const parts=[{m:1,l:1},{m:2,l:0.35},{m:3,l:0.12}];
     const oscs=[];
     parts.forEach(p=>{
       const o=ctx.createOscillator(); o.type='triangle';
