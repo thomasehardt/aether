@@ -588,7 +588,7 @@
       voices.push({o, mult:p.mult});
     });
     route(hp, g, 0.7); // lean heavily into reverb for a distant, airy quality
-    layers.shimmer = { g, max:0.38, voices, mix };
+    layers.shimmer = { g, max:0.22, voices, mix };
   }
 
   function triggerBell(){
@@ -661,38 +661,60 @@
     const step = PENTA[deg % PENTA.length];
     const freq = root * Math.pow(2, octave + step/12);
     const t = ctx.currentTime;
-    const dur = 0.9 + rng()*0.5;
     const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
     if(pan) pan.pan.value = (rng()*2-1)*0.5;
+
+    // Karplus-Strong plucked string: a brief noise burst excites a delay-line
+    // tuned to one period of the note; the loop's own resonance supplies the
+    // full harmonic series (no separate oscillator partials needed). Damping
+    // uses the classic two-tap moving-average filter (y[n]=(x[n]+x[n-1])/2)
+    // rather than a BiquadFilterNode — a biquad inside a sub-3ms feedback
+    // loop is numerically unstable in Web Audio (confirmed: it blows up to
+    // Infinity within ~2s, logging "BiquadFilterNode: state is bad"); the
+    // averaging filter is pure delay+gain math, so loop gain is bounded by
+    // the feedback gain at every frequency and can't diverge.
+    const ringDur = 1.6 + rng()*1.2; // audible note length — a touch longer/more sustained for a softer feel
+    const decayT = ringDur*0.65; // loop's own decay constant, shorter than ringDur so the envelope closes it out cleanly
+    const delayTime = 1/freq;
+    const burstDur = Math.max(delayTime*3, 0.015);
+    const burstOffset = rng()*(noise.pink.duration-burstDur-0.05);
+    // pink noise (vs. white) and a pre-loop lowpass soften the excitation's
+    // spectrum, and a short fade-in avoids an instant "snap" transient —
+    // together this rounds off the pluck into something mellower/felt-like
+    // rather than a bright steel-string attack. The prefilter sits OUTSIDE
+    // the feedback loop so it can't cause the instability we hit earlier.
+    const burst = ctx.createBufferSource(); burst.buffer=noise.pink;
+    const prelp = filt('lowpass', Math.min(1800, Math.max(500, freq*3)), 0.5);
+    const burstEnv = gain(0);
+    burstEnv.gain.setValueAtTime(0, t);
+    burstEnv.gain.linearRampToValueAtTime(1, t+0.025);
+    const delay = ctx.createDelay(0.05); delay.delayTime.value=delayTime;
+    const tap1 = ctx.createDelay(0.001); tap1.delayTime.value=1/ctx.sampleRate;
+    const avgA = gain(0.5), avgB = gain(0.5);
+    const damped = gain(1);
+    const feedback = gain(Math.exp(-1/(freq*decayT)));
     const env = gain(0);
-    const peak = 0.24*lvl;
-    env.gain.setValueAtTime(0.0001, t);
-    env.gain.exponentialRampToValueAtTime(peak, t+0.006);
-    env.gain.exponentialRampToValueAtTime(0.0001, t+dur);
-    // plucky lowpass sweep gives it a struck/plucked character distinct from the bells;
-    // kept wide enough that it doesn't filter the note into inaudibility
-    const lp = filt('lowpass', freq*10, 1.1);
-    lp.frequency.setValueAtTime(freq*10, t);
-    lp.frequency.exponentialRampToValueAtTime(freq*3, t+dur*0.8);
-    const parts=[{m:1,l:1},{m:2,l:0.35},{m:3,l:0.12}];
-    const oscs=[];
-    parts.forEach(p=>{
-      const o=ctx.createOscillator(); o.type='triangle';
-      o.frequency.value=freq*p.m;
-      const pg=gain(p.l); o.connect(pg).connect(lp);
-      o.start(t); o.stop(t+dur+0.1); oscs.push(o);
-    });
-    lp.connect(env);
+    const peak = 0.22*lvl; // pulled back a bit so it sits further back rather than jumping out
+    env.gain.setValueAtTime(peak, t);
+    env.gain.exponentialRampToValueAtTime(0.0001, t+ringDur);
+    burst.connect(prelp).connect(burstEnv).connect(delay);
+    delay.connect(avgA); avgA.connect(damped); // x[n]
+    delay.connect(tap1); tap1.connect(avgB); avgB.connect(damped); // x[n-1]
+    damped.connect(feedback);
+    feedback.connect(delay); // feedback loop
+    damped.connect(env);
+    burst.start(t, burstOffset, burstDur);
     const tail = pan ? (env.connect(pan), pan) : env;
     tail.connect(layers.arp.out);
-    setTimeout(()=>{ try{env.disconnect(); lp.disconnect(); if(pan)pan.disconnect();}catch(e){} }, (dur+0.3)*1000);
+    setTimeout(()=>{ try{burst.disconnect(); prelp.disconnect(); burstEnv.disconnect(); delay.disconnect(); tap1.disconnect(); avgA.disconnect(); avgB.disconnect(); damped.disconnect(); feedback.disconnect(); env.disconnect(); if(pan)pan.disconnect();}catch(e){} }, (ringDur+0.3)*1000);
   }
 
   function startArpScheduler(){
     const tick=()=>{
       if(state.arp>0.001){
-        triggerArpNote();
-        const stepDur = 0.5 + rng()*0.12; // steady pulse with slight swing
+        // occasional rest so the phrase breathes instead of firing on every step
+        if(rng()<0.7) triggerArpNote();
+        const stepDur = 1.8 + rng()*1.8; // slow, spacious pulse (~1.8-3.6s)
         arpTimer = setTimeout(tick, stepDur*1000);
       } else {
         arpTimer = setTimeout(tick, 700);
