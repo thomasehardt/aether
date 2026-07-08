@@ -131,4 +131,6 @@ jobs:
           git add docs/fdroid-repo/repo docs/fdroid-repo/archive docs/aether-latest.apk
           git diff --cached --quiet && echo "nothing to commit" && exit 0
           git commit -m "Publish v${{ steps.version.outputs.name }} [skip ci]"
-          git push
+          # a tag-triggered checkout leaves us in detached HEAD, so `git push`
+          # alone doesn't know a target branch/ref
+          git push origin HEAD:main
