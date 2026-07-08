@@ -842,15 +842,15 @@
           <div class="lyr-toggle" role="switch" aria-label="Toggle ${d.name}"></div>
           <div class="lyr-name"><span class="n">${d.name}</span><span class="d">${d.desc}</span></div>
         </div>
-        <input type="range" min="0" max="100" value="0" aria-label="${d.name} level">
-        <span class="lyr-val">0</span>`;
+        <input type="range" min="0" max="100" value="0" aria-label="${d.name} volume">
+        <span class="lyr-val">0%</span>`;
       const tog=row.querySelector('.lyr-toggle');
       const rng=row.querySelector('input');
       const val=row.querySelector('.lyr-val');
       const setFill=()=>rng.style.setProperty('--fill', rng.value+'%');
       const commit=(v)=>{
         v=Math.max(0,Math.min(100,v));
-        rng.value=v; val.textContent=v; setFill();
+        rng.value=v; val.textContent=v+'%'; setFill();
         row.classList.toggle('on', v>0);
         setLayer(d.id, v/100);
         syncPresetHighlight();
