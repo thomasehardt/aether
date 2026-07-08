@@ -333,22 +333,24 @@
 
   // ---- layer definitions ----
   const LAYER_DEFS = [
-    { id:'drone', name:'Drone',  desc:'harmonic bed',      base:0.34 },
-    { id:'sub',   name:'Sub',    desc:'deep swell',        base:0.42 },
-    { id:'rain',  name:'Rain',   desc:'filtered noise',    base:0.5  },
-    { id:'waves', name:'Waves',  desc:'ocean wash',        base:0.55 },
-    { id:'wind',  name:'Wind',   desc:'breathing air',     base:0.42 },
-    { id:'bells', name:'Bells',  desc:'generative motes',  base:0.5  },
-    { id:'arp',   name:'Arp',    desc:'melodic phrases',   base:0.4  },
+    { id:'drone',   name:'Drone',   desc:'harmonic bed',      base:0.34 },
+    { id:'pad',     name:'Pad',     desc:'choir swell',       base:0.38 },
+    { id:'sub',     name:'Sub',     desc:'deep swell',        base:0.42 },
+    { id:'rain',    name:'Rain',    desc:'filtered noise',    base:0.5  },
+    { id:'waves',   name:'Waves',   desc:'ocean wash',        base:0.55 },
+    { id:'wind',    name:'Wind',    desc:'breathing air',     base:0.42 },
+    { id:'bells',   name:'Bells',   desc:'generative motes',  base:0.5  },
+    { id:'arp',     name:'Arp',     desc:'melodic phrases',   base:0.4  },
+    { id:'shimmer', name:'Shimmer', desc:'high overtones',    base:0.3  },
   ];
 
   // ---- presets: {layer: level 0..1}, key ----
   const PRESETS = {
     'Rainfall':   { key:'A', layers:{ rain:0.85, drone:0.35, wind:0.22 } },
     'Deep Ocean': { key:'D', layers:{ waves:0.85, wind:0.3, sub:0.45 } },
-    'Nebula':     { key:'E', layers:{ drone:0.6, sub:0.5, bells:0.45, arp:0.3 } },
+    'Nebula':     { key:'E', layers:{ drone:0.6, sub:0.5, bells:0.45, arp:0.3, pad:0.32, shimmer:0.4 } },
     'Rainforest': { key:'G', layers:{ wind:0.32, bells:0.5, rain:0.28 } },
-    'Sanctuary':  { key:'C', layers:{ drone:0.5, bells:0.6, sub:0.32, arp:0.35 } },
+    'Sanctuary':  { key:'C', layers:{ drone:0.5, bells:0.6, sub:0.32, arp:0.35, pad:0.3 } },
   };
 
   // ---- engine state ----
@@ -357,7 +359,8 @@
   let curKey='C', masterVol=0.55, spaceAmt=0.45;
   let bellTimer=null;
   let arpTimer=null, arpPhrase=[], arpStep=0;
-  const state = { drone:0, sub:0, rain:0, waves:0, wind:0, bells:0, arp:0 }; // 0..1 target levels
+  let chordTimer=null, curChordDeg=0; // shared tonal center that bells, arp and the pad chord orbit
+  const state = { drone:0, sub:0, rain:0, waves:0, wind:0, bells:0, arp:0, pad:0, shimmer:0 }; // 0..1 target levels
 
   // ================= AUDIO BUILD =================
   function makeNoise(type, secs){
@@ -423,8 +426,8 @@
     noise.pink  = makeNoise('pink',3);
     noise.brown = makeNoise('brown',3);
 
-    buildRain(); buildWaves(); buildWind(); buildDrone(); buildSub(); buildBells(); buildArp();
-    startBellScheduler(); startArpScheduler();
+    buildRain(); buildWaves(); buildWind(); buildDrone(); buildPad(); buildSub(); buildBells(); buildArp(); buildShimmer();
+    startBellScheduler(); startArpScheduler(); startChordScheduler();
   }
 
   // route a layer's output: dry + reverb send
@@ -504,6 +507,31 @@
     layers.drone = { g, max:0.34, voices, mix };
   }
 
+  // a slow choir-like triad; chord tones are relative to a shared tonal
+  // center (curChordDeg) so it moves in step with bells/arp — see retunePad()
+  function buildPad(){
+    const g = gain(0);
+    const mix = gain(0.28);
+    const lp = filt('lowpass',1400,0.6);
+    mix.connect(lp);
+    lfo(0.03, 500, lp.frequency, 0); // slow filter breathing
+    const chordSemis = [0,3,7]; // root, minor third, fifth
+    const voices = [];
+    chordSemis.forEach((semi,ci)=>{
+      [-8,8].forEach((det,vi)=>{
+        const o=ctx.createOscillator(); o.type='sawtooth'; o.detune.value=det;
+        const vg=gain(0.19);
+        o.connect(vg).connect(mix);
+        lfo(0.06+ci*0.013+vi*0.007, 4, o.detune, ci*70+vi*35); // slow vibrato per voice
+        o.start();
+        voices.push({o, semi});
+      });
+    });
+    route(lp, g, 0.55);
+    layers.pad = { g, max:0.4, voices, mix };
+    retunePad(true);
+  }
+
   function buildSub(){
     const g = gain(0);
     const root = KEYS[curKey];
@@ -533,12 +561,43 @@
     layers.arp = { g, max:1.0, out:g };
   }
 
+  // quiet high overtones a couple octaves above the drone root, for an airy top end
+  function buildShimmer(){
+    const g = gain(0);
+    const mix = gain(0.3);
+    // cutoff sits well below the fundamental below so it only trims true low end,
+    // rather than eating the shimmer's own tone (a filter set above the source
+    // register silently strips the signal no matter how much gain precedes it)
+    const hp = filt('highpass',400,0.5);
+    mix.connect(hp);
+    const root = KEYS[curKey]*16; // two-plus octaves above the drone root
+    const partials = [
+      {mult:1,   lvl:0.5,  det:-5},
+      {mult:1.5, lvl:0.35, det:+6}, // fifth
+      {mult:2,   lvl:0.3,  det:-8}, // octave
+      {mult:3,   lvl:0.16, det:+9}, // shimmer overtone
+    ];
+    const voices = [];
+    partials.forEach((p,i)=>{
+      const o=ctx.createOscillator(); o.type='sine';
+      o.frequency.value=root*p.mult; o.detune.value=p.det;
+      const vg=gain(p.lvl*0.4);
+      o.connect(vg).connect(mix);
+      lfo(0.025+i*0.011, p.lvl*0.14, vg.gain, i*55); // long slow swells
+      o.start();
+      voices.push({o, mult:p.mult});
+    });
+    route(hp, g, 0.7); // lean heavily into reverb for a distant, airy quality
+    layers.shimmer = { g, max:0.38, voices, mix };
+  }
+
   function triggerBell(){
     if(!ctx || state.bells<=0.001) return;
     const lvl = state.bells;
     const root = KEYS[curKey]*4;
     const octave = Math.floor(rng()*3);
-    const step = PENTA[Math.floor(rng()*PENTA.length)];
+    // mostly favor the shared chord center so bells and arp feel harmonically tied together
+    const step = PENTA[rng()<0.55 ? curChordDeg : Math.floor(rng()*PENTA.length)];
     const freq = root * Math.pow(2, octave + step/12);
     const t = ctx.currentTime;
     const dur = 2.4 + rng()*2.2;
@@ -580,7 +639,8 @@
   // walks a short generative melodic phrase over the pentatonic scale
   function regenArpPhrase(){
     const len = 6 + Math.floor(rng()*3); // 6-8 notes
-    const degrees = [0]; // start on the root
+    const startOct = rng()<0.5 ? 0 : PENTA.length; // start in either arp octave
+    const degrees = [startOct + curChordDeg]; // orbit the shared chord center
     for(let i=1;i<len;i++){
       const prev = degrees[i-1];
       const move = Math.floor(rng()*5)-2; // step -2..+2 scale degrees
@@ -641,6 +701,18 @@
     arpTimer = setTimeout(tick, 900);
   }
 
+  // slowly drifts a shared tonal center (a pentatonic degree) that bells,
+  // arp phrases and the pad chord all orbit, so they read as one voice
+  function startChordScheduler(){
+    const tick=()=>{
+      const move = Math.floor(rng()*3)-1; // gentle step to a neighboring chord tone
+      curChordDeg = (curChordDeg + move + PENTA.length) % PENTA.length;
+      retunePad();
+      chordTimer = setTimeout(tick, (14 + rng()*10)*1000);
+    };
+    chordTimer = setTimeout(tick, 6000);
+  }
+
   // seeded-ish rng so "Reseed" changes the generative character
   function rng(){ seed=(seed*9301+49297)%233280; return seed/233280; }
 
@@ -652,6 +724,19 @@
     if(id==='bells' || id==='arp') return; // handled per-note
     const target = val * L.max;
     L.g.gain.setTargetAtTime(playing? target:0, ctx.currentTime, 0.9);
+  }
+
+  // retunes the pad's triad to the current key + shared chord center; called on
+  // key change (applyKey) and on chord drift (startChordScheduler)
+  function retunePad(immediate){
+    if(!ctx || !layers.pad) return;
+    const now=ctx.currentTime;
+    const chordRoot = KEYS[curKey]*2*Math.pow(2, PENTA[curChordDeg]/12);
+    layers.pad.voices.forEach(v=>{
+      const target = chordRoot*Math.pow(2, v.semi/12);
+      if(immediate) v.o.frequency.value = target;
+      else v.o.frequency.setTargetAtTime(target, now, 1.1);
+    });
   }
 
   function applyKey(){
@@ -668,6 +753,13 @@
       const root=KEYS[curKey];
       layers.sub.voices.forEach((o,i)=>{
         o.frequency.setTargetAtTime(root*layers.sub.roots[i], now, 0.4);
+      });
+    }
+    retunePad();
+    if(layers.shimmer){
+      const root=KEYS[curKey]*16;
+      layers.shimmer.voices.forEach(v=>{
+        v.o.frequency.setTargetAtTime(root*v.mult, now, 0.8);
       });
     }
   }
