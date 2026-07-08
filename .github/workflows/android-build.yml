@@ -116,6 +116,7 @@ jobs:
         working-directory: docs/fdroid-repo
         run: |
           export PATH="$HOME/.local/bin:$PATH"
+          mkdir -p repo
           cp ../../mobile/android/app/build/outputs/apk/release/app-release.apk \
             "repo/net.ehardt.aether_${{ steps.version.outputs.code }}.apk"
           fdroid update -c
