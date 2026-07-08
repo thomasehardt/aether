@@ -124,6 +124,23 @@ jobs:
       - name: Publish a stable-URL copy of the latest APK
         run: cp mobile/android/app/build/outputs/apk/release/app-release.apk docs/aether-latest.apk
 
+      - name: Create or update GitHub Release with the APK attached
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp mobile/android/app/build/outputs/apk/release/app-release.apk \
+            "aether-v${{ steps.version.outputs.name }}.apk"
+          if gh release view "${{ github.ref_name }}" >/dev/null 2>&1; then
+            gh release upload "${{ github.ref_name }}" \
+              "aether-v${{ steps.version.outputs.name }}.apk" --clobber
+          else
+            gh release create "${{ github.ref_name }}" \
+              "aether-v${{ steps.version.outputs.name }}.apk" \
+              --title "${{ github.ref_name }}" \
+              --generate-notes \
+              --latest
+          fi
+
       - name: Commit published repo + latest APK back to the repository
         run: |
           git config user.name "github-actions[bot]"
