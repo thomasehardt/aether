@@ -795,10 +795,25 @@
     }
   }
 
+  // keeps audio running when the app loses focus/is backgrounded — a plain
+  // WebView gets throttled/suspended otherwise. No-op outside the native
+  // Android app (window.Capacitor doesn't exist in a regular browser/PWA),
+  // where the browser's own tab-audio rules already keep playback going.
+  // BackgroundAudio is a small custom plugin (mobile/android/.../BackgroundAudioPlugin.java)
+  // rather than a third-party one, specifically to avoid pulling in
+  // permissions this app doesn't need (mic, overlay, etc).
+  function setBackgroundAudio(on){
+    const BackgroundAudio = window.Capacitor?.Plugins?.BackgroundAudio;
+    if(!BackgroundAudio) return;
+    if(on) BackgroundAudio.enable().catch(()=>{});
+    else BackgroundAudio.disable().catch(()=>{});
+  }
+
   function setPlaying(on){
     playing=on;
     document.getElementById('playBtn').classList.toggle('playing',on);
     document.getElementById('status').textContent = on ? 'Now playing' : 'Paused';
+    setBackgroundAudio(on);
     if(!ctx) return;
     LAYER_DEFS.forEach(d=>{
       if(d.id==='bells' || d.id==='arp') return;

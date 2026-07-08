@@ -1,6 +1,6 @@
 # Aether
 
-**v0.2.0**
+**v0.3.0**
 
 > **AI-generated software.** The overwhelming majority of this project's code, audio design, and documentation was written by Claude (Anthropic), directed and reviewed by a human. See git history for the full record — commits are marked with Claude's co-authorship.
 
@@ -32,7 +32,7 @@ Then visit the served URL and click the orb to start. On mobile, use the browser
 
 ## Android
 
-There's also a native Android build (via [Capacitor](https://capacitorjs.com/), `mobile/`) — fully offline, no network permission, all fonts self-hosted. It's not on the Play Store. A [GitHub Actions workflow](.github/workflows/android-build.yml) builds and publishes it automatically on every relevant change. Two ways to get it:
+There's also a native Android build (via [Capacitor](https://capacitorjs.com/), `mobile/`) — fully offline, keeps playing when backgrounded (via a proper `mediaPlayback` foreground service, a small custom plugin rather than a third-party one — see below), all fonts self-hosted. It's not on the Play Store. A [GitHub Actions workflow](.github/workflows/android-build.yml) builds and publishes it automatically on every relevant change. Two ways to get it:
 
 - **Sideload the latest APK directly** — [aether-latest.apk](https://thomasehardt.github.io/aether/aether-latest.apk), always the most recent CI build; install it manually (you'll need to allow installs from the source you download it from).
 - **Add the self-hosted F-Droid repo** — in the F-Droid app, add this repo: `https://thomasehardt.github.io/aether/fdroid-repo/repo`. You'll get real F-Droid-style installs and update notifications without it being in the official F-Droid catalog.

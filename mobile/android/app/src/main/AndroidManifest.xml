@@ -33,8 +33,21 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <service
+            android:name=".BackgroundAudioService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
     </application>
 
-    <!-- No permissions: the app is fully self-contained (bundled local assets,
-         no network calls), so it doesn't need android.permission.INTERNET -->
+    <!-- No android.permission.INTERNET — the app is fully self-contained,
+         no network calls. The permissions below are the minimum Android
+         requires for a foreground service that keeps audio playing while
+         backgrounded (see BackgroundAudioService/Plugin); notably no
+         RECORD_AUDIO, no SYSTEM_ALERT_WINDOW, no battery-optimization
+         bypass — this app doesn't need any of that. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>
