@@ -1,10 +1,14 @@
-const CACHE_NAME = 'aether-v1';
+const CACHE_NAME = 'aether-v2';
 const SHELL = [
   './aether-soundscape.html',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
+  './fonts/syne-var.woff2',
+  './fonts/inter-var.woff2',
+  './fonts/spacemono-400.woff2',
+  './fonts/spacemono-700.woff2',
 ];
 
 self.addEventListener('install', (e) => {

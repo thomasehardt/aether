@@ -1,0 +1,37 @@
+AuthorName: Thomas Ehardt
+WebSite: https://github.com/thomasehardt/aether
+Bitcoin: null
+Litecoin: null
+Donate: null
+
+License: MIT
+Categories:
+  - Multimedia
+
+IssueTracker: https://github.com/thomasehardt/aether/issues
+SourceCode: https://github.com/thomasehardt/aether
+Changelog: https://github.com/thomasehardt/aether/commits/main
+
+Name: Aether
+Summary: AI-co-authored generative ambient soundscape player
+Description: |
+  This app was co-authored by an AI agent (Claude, by Anthropic), directed
+  and reviewed by a human. See the project's source repository and git
+  history for the full record of what was generated versus human-directed.
+
+  Aether is a generative ambient soundscape player. Every sound — drones, a
+  choir pad, sub bass, rain, ocean waves, wind, generative bell tones, a
+  plucked-string arpeggiator, and high shimmer overtones — is synthesized
+  live with the Web Audio API. No audio samples, no loops.
+
+  Features:
+
+  * Nine independently-mixed ambient layers
+  * Five root keys, with the melodic layers generated over a shared,
+    slowly-drifting tonal center so they read as one coherent voice
+  * Five built-in presets
+  * Reactive audio-driven visualizer
+  * Fully offline — no network access, no accounts, no tracking
+
+ArchivePolicy: 2 versions
+RequiresRoot: false

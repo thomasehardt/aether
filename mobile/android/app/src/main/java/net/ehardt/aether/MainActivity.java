@@ -1,0 +1,5 @@
+package net.ehardt.aether;
+
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {}

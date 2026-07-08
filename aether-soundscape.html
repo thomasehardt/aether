@@ -11,10 +11,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Aether">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
+  /* self-hosted (no external network dependency — see fonts/) */
+  @font-face{font-family:'Syne';font-style:normal;font-weight:600 800;font-display:swap;src:url('fonts/syne-var.woff2') format('woff2');}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:400 600;font-display:swap;src:url('fonts/inter-var.woff2') format('woff2');}
+  @font-face{font-family:'Space Mono';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/spacemono-400.woff2') format('woff2');}
+  @font-face{font-family:'Space Mono';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/spacemono-700.woff2') format('woff2');}
   :root{
     --bg:#070A12;
     --bg-grad-1:#0B1120;
